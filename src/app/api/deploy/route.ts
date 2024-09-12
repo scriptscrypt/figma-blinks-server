@@ -49,7 +49,7 @@
 //       Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 
 //     // Combine slug and unique identifier
-//     const fileName = `${slug}-${uniqueId}.ts`;
+//     const folderName = `${slug}-${uniqueId}.ts`;
 
 //     // Create the content for the new file
 //     const fileContent = `
@@ -147,10 +147,10 @@
 //     await fs.mkdir(dir, { recursive: true });
 
 //     // Write the file
-//     await fs.writeFile(path.join(dir, fileName), fileContent);
+//     await fs.writeFile(path.join(dir, folderName), fileContent);
 
 //     return NextResponse.json(
-//       { success: true, fileName },
+//       { success: true, folderName },
 //       {
 //         status: 201,
 //         headers: {
@@ -195,7 +195,6 @@
 //   );
 // }
 
-
 // File: app/api/deploy/route.ts
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
@@ -223,7 +222,7 @@ export async function POST(request: Request) {
       Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 
     // Combine slug and unique identifier
-    const fileName = `${slug}-${uniqueId}.ts`;
+    const folderName = `${slug}-${uniqueId}`;
 
     // Create the content for the new file
     const fileContent = `
@@ -317,14 +316,26 @@ export const POST = async (req: Request) => {
 `;
 
     // Ensure the directory exists
-    const dir = path.join(process.cwd(),"src", "app", "api", "blinks");
+    const dir = path.join(
+      process.cwd(),
+      "src",
+      "app",
+      "api",
+      "actions",
+      "blinks",
+      folderName
+    );
     await fs.mkdir(dir, { recursive: true });
 
     // Write the file
-    await fs.writeFile(path.join(dir, fileName), fileContent);
+    await fs.writeFile(path.join(dir, "route.ts"), fileContent);
 
     return NextResponse.json(
-      { success: true, fileName },
+      {
+        success: true,
+        folderName,
+        blinkUrl: `http://localhost:3000/blinks/${folderName}`,
+      },
       {
         status: 201,
         headers: {

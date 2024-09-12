@@ -23,10 +23,10 @@ const headers = createActionHeaders();
 export const GET = async (req: Request) => {
   const payload: ActionGetResponse = {
     type: "action",
-    title: "Awesome Title",
+    title: "Magic Blinks",
     icon: new URL("/solana_devs.jpg", new URL(req.url).origin).toString(),
-    description: "Awesome Description",
-    label: "BtnTxt",
+    description: "Magic Description",
+    label: "Magic",
   };
   return Response.json(payload, {
     headers,
