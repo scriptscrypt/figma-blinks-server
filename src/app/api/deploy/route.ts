@@ -1,7 +1,7 @@
 // File: app/api/deploy/route.ts
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+// import fs from "fs/promises";
+// import path from "path";
 import { kv } from "@vercel/kv";
 import { nanoid } from "nanoid";
 
