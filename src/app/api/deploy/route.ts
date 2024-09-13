@@ -2,10 +2,13 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import { kv } from "@vercel/kv";
+import { nanoid } from "nanoid";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
     const {
       paramBlinkTitle,
       paramBlinkDescription,
@@ -21,8 +24,11 @@ export async function POST(request: Request) {
       .trim();
 
     // Generate a unique identifier
-    const uniqueId =
-      Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    // const uniqueId =
+    //   Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+    // Generate a unique identifier
+    const uniqueId = nanoid();
 
     // Combine slug and unique identifier
     const folderName = `${slug}-${uniqueId}`;
@@ -118,26 +124,43 @@ export const POST = async (req: Request) => {
 };
 `;
 
-    // Ensure the directory exists
-    const dir = path.join(
-      process.cwd(),
-      "src",
-      "app",
-      "api",
-      "actions",
-      "blinks",
-      folderName
-    );
-    await fs.mkdir(dir, { recursive: true });
+    // // Ensure the directory exists
+    // const dir = path.join(
+    //   process.cwd(),
+    //   "src",
+    //   "app",
+    //   "api",
+    //   "actions",
+    //   "blinks",
+    //   folderName
+    // );
+    // await fs.mkdir(dir, { recursive: true });
 
-    // Write the file
-    await fs.writeFile(path.join(dir, "route.ts"), fileContent);
+    // // Write the file
+    // await fs.writeFile(path.join(dir, "route.ts"), fileContent);
+
+    const folderStructure = {
+      api: {
+        actions: {
+          blinks: {
+            [uniqueId]: {
+              "index.ts": fileContent,
+            },
+          },
+        },
+      },
+    };
+    // Store the content in Vercel KV
+    await kv.set(
+      `folder_structure:${uniqueId}`,
+      JSON.stringify(folderStructure)
+    );
 
     return NextResponse.json(
       {
         success: true,
         folderName,
-        blinkUrl: `http://localhost:3000/blinks/${folderName}`,
+        blinkUrl: `${process.env.VERCEL_URL}/blinks/${folderName}`,
       },
       {
         status: 201,
@@ -176,4 +199,54 @@ export async function OPTIONS() {
       },
     }
   );
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const path = searchParams.get("path");
+
+  if (!id || !path) {
+    return NextResponse.json(
+      { error: "No ID or path provided" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const folderStructure = await kv.get(`folder_structure:${id}`);
+
+    if (!folderStructure) {
+      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+    }
+
+    // Navigate the folder structure to get the file content
+    const pathParts = path.split("/").filter(Boolean);
+    let content: any = folderStructure;
+    for (const part of pathParts) {
+      if (content && typeof content === "object" && part in content) {
+        content = content[part];
+      } else {
+        return NextResponse.json(
+          { error: "File not found in the specified path" },
+          { status: 404 }
+        );
+      }
+    }
+
+    if (typeof content !== "string") {
+      return NextResponse.json(
+        { error: "Invalid content type" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ content }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching entry:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch entry" },
+      { status: 500 }
+    );
+  }
 }
