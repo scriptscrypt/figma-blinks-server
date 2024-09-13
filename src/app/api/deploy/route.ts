@@ -144,7 +144,7 @@ export const POST = async (req: Request) => {
         actions: {
           blinks: {
             [uniqueId]: {
-              "index.ts": fileContent,
+              "route.ts": fileContent,
             },
           },
         },
